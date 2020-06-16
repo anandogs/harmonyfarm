@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 
 def get_month_range():
     today = datetime.today()
+    
     two_months_ago = (datetime.now() - relativedelta(months=2)).replace(day=1)
     year_ago_end = (datetime.now() - relativedelta(months=12))
     year_ago_start = (year_ago_end - relativedelta(months = 2)).replace(day=1)
@@ -56,6 +57,17 @@ def main():
     sales_df['MonthA'] = pd.DatetimeIndex(sales_df['Timestamp']).month
 
     sales_df['finyr'] = sales_df.apply(lambda row: finyr(row['Timestamp']), axis=1)
+
+    this_month = cyend.replace(day=1)
+    
+    sales_month = sales_df[(sales_df['Timestamp'] > this_month) & (sales_df['Timestamp'] < cyend)]
+    sales_month = sales_month.drop(columns=['Month', 'Type', 'Date', 'MonthA', 'finyr'])
+    sales_month.sort_values(by='Timestamp', inplace=True)
+    sales_month['Total Sales'] = sales_month['Total Sales'].astype('int')
+    sales_month = sales_month.append(sales_month.sum(numeric_only=True), ignore_index=True)
+    sales_month.loc[len(sales_month)-1,'Buyer Name'] = 'TOTAL'
+    sales_month['Timestamp'] = pd.to_datetime(sales_month['Timestamp']).dt.date
+    
 
     sales_cy = sales_df[(sales_df['Timestamp'] > cystart) & (sales_df['Timestamp'] < cyend)]
     sales_py = sales_df[(sales_df['Timestamp'] > pystart) & (sales_df['Timestamp'] < pyend)]
@@ -121,7 +133,7 @@ def main():
     trees_balance = int(-capex[capex['CAPEX Type'] == 'Trees'].sum()['Expense Amount'])
 
     with open("harmony.html", 'w') as _file:
-        _file.write('<style> table{ text-align: center; width:100%}</style><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous"><div class="container"><h1>Harmony P&L</h1><br><h2>'+ sales_des + ' compared with same period last year</h2>' + sales_by_month.to_html() + '<br><br><h2>'+ pandl_des +'</h2>' + summary_df.to_html()+'<br><br><h3>Remaining Peanut CAPEX to recoup: '+str(int(peanut_balance))+'<br>Remaining Tree CAPEX to recoup: '+str(int(trees_balance))+'</h3></div>')
+        _file.write('<style> table{ text-align: center; width:100%}</style><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous"><div class="container"><h1>Harmony P&L</h1><br><h2>'+ sales_des + ' compared with same period last year</h2>' + sales_by_month.to_html() + '<br><br><h2>'+ pandl_des +'</h2>' + summary_df.to_html()+'<br><br>' + sales_month.to_html(index=False)+'<br><br><h3>Remaining Peanut CAPEX to recoup: '+str(int(peanut_balance))+'<br>Remaining Tree CAPEX to recoup: '+str(int(trees_balance))+'</h3></div>')
 
 if __name__ == '__main__':
     main()
